@@ -1,4 +1,4 @@
-# Preparing Training Data
+# Preparing Hate Speech Training Data
 
 import pandas as pd
 
