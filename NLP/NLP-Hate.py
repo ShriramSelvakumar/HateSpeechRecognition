@@ -21,12 +21,12 @@ def remove_RT(text):
 
 # Removing Punctuations
 def remove_punctuation(text):
+    # Removing "&amp"
+    return_text = " ".join(re.split('[&][a][m][p]', text))
     # Punctuations without '
     punctuations = '!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~'
-    # Remove punctuations
-    return_text = " ".join(re.split('['+punctuations+']+', text))
-    # Removing "&amp"
-    return_text = " ".join(re.split('[&][a][m][p]', return_text))
+    # Removing regular punctuations
+    return_text = " ".join(re.split('['+punctuations+']+', return_text))
     # sometimes ' connect words - "I'm" - below line outputs - "Im"
     return_text = "".join(re.split('[\'’]', return_text))
     #  Removing other punctuations
