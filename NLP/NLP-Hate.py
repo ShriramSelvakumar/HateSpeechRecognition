@@ -23,10 +23,15 @@ def remove_RT(text):
 def remove_punctuation(text):
     # Punctuations without '
     punctuations = '!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~'
+    # punctuations = '!"#$%&()*+,-/:;<=>?@[\\]^_`{|}~'
     # Remove punctuations
     return_text = " ".join(re.split('['+punctuations+']+', text))
     # sometimes ' connect words - "I'm" - below line outputs - "Im"
     return_text = "".join(re.split('[\']+', return_text))
+    # return_text = "".join(re.split('[’]+', return_text))
+    return_text = "".join(re.split('[’…“”—⁣️]+', return_text))
+
+    # return_text = " ".join(re.split(r'[.]+/^(?!.*[0-9][.]).*/', return_text))
     # return_text = " ".join([char for char in text if char not in string.punctuation])
     return return_text
 
@@ -40,8 +45,15 @@ def remove_links(text):
 
 # Function to remove emoji strings
 def remove_emoji(text):
-    return_text = " ".join(re.split('[&#0-9]+', text))
+    return_text = " ".join(re.split('[&#][0-9]+', text))
     return return_text
+
+
+# Function to Tokenize
+def tokenize(text):
+    # tokens = " ".join(re.findall('[\w]+', text))
+    tokens = text.split()
+    return tokens
 
 
 # Removing @usernames
@@ -51,9 +63,11 @@ data_Hate['text_RT'] = data_Hate['text_nousername'].apply(lambda x: remove_RT(x)
 # Removing links
 data_Hate['text_links'] = data_Hate['text_RT'].apply(lambda x: remove_links(x))
 # Removing Emojis
-data_Hate['text_emoji'] = data_Hate['text_links'].apply(lambda x: remove_emoji(x))
+# data_Hate['text_emoji'] = data_Hate['text_links'].apply(lambda x: remove_emoji(x))
 # Removing Punctuations
-data_Hate['text_nopunct'] = data_Hate['text_emoji'].apply(lambda x: remove_punctuation(x))
+data_Hate['text_nopunct'] = data_Hate['text_links'].apply(lambda x: remove_punctuation(x))
+# Tokenizing
+data_Hate['text_tokens'] = data_Hate['text_nopunct'].apply(lambda x: tokenize(x))
 
 
 
