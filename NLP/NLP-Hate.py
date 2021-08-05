@@ -1,8 +1,11 @@
 import pandas as pd
+import nltk
 import re
 
 # Setting display width for panda outputs
 pd.set_option('display.max_colwidth', 200)
+# Getting stopwords from NLTK corpus
+stopwords = nltk.corpus.stopwords.words('english')
 # Reading Hate Speech data
 data_Hate = pd.read_csv('../Data/HS_DATA.csv', sep=',', index_col=0)
 
@@ -30,7 +33,7 @@ def remove_punctuation(text):
     # sometimes ' connect words - "I'm" - below line outputs - "Im"
     return_text = "".join(re.split('[\'’]', return_text))
     #  Removing other punctuations
-    return_text = " ".join(re.split('[…“”—⁣️‼„‘´, ･─•⠀❓¿˽।]+', return_text))
+    return_text = " ".join(re.split('[…“”—⁣️‼„‘´, ･─•⠀❓¿˽।‍ ‍‍]+', return_text))
     return_text = " ".join(re.split(r'\\', return_text))
     return return_text
 
@@ -52,6 +55,7 @@ def remove_emoji(text):
 def tokenize(text):
     # tokens = " ".join(re.findall('[\w]+', text))
     tokens = text.split()
+    tokens = [word.lower() for word in tokens]
     return tokens
 
 
@@ -65,6 +69,7 @@ def finding_emojis(data):
     return emojis[0].unique()
 
 
+# Function to make separate emojis as individual tokens
 def separate_emojis(text):
     return_text = ''
     for char in text:
@@ -73,6 +78,19 @@ def separate_emojis(text):
         else:
             return_text = return_text + char
     return return_text
+
+
+# Function to make words lower case and remove stop words
+def remove_stop_words(text):
+    return_text = [word for word in text if word not in stopwords]
+    return return_text
+
+
+# Save DataFrame to pickle
+def save_to_pickle():
+    data_Hate.to_pickle('../Data/Data-Hate.pkl')
+    print('Saved data to Pickle')
+    return
 
 
 # Removing @usernames
@@ -91,7 +109,10 @@ emojis_array = finding_emojis(data_Hate.text_nopunct)
 data_Hate['text_emoji'] = data_Hate['text_nopunct'].apply(lambda x: separate_emojis(x))
 # Tokenizing
 data_Hate['text_tokens'] = data_Hate['text_emoji'].apply(lambda x: tokenize(x))
-
+# Remove stop words and make text lower case
+data_Hate['text_no_stop_words_tokens'] = data_Hate['text_tokens'].apply(lambda x: remove_stop_words(x))
+# Saving to pickle
+save_to_pickle()
 
 
 
