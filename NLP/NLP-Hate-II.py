@@ -95,7 +95,7 @@ rf_model = random_forest.fit(X_train, y_train)
 
 y_pred = rf_model.predict(X_test)
 precision, recall, fscore, support = score(y_test, y_pred, average='micro')
-
+save_to_pickle('Data-Hate-TFIDF-DF')
 
 
 
