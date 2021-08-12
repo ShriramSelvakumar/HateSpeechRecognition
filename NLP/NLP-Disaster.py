@@ -85,7 +85,7 @@ def remove_stop_words(text):
 
 # Save DataFrame to pickle
 def save_to_pickle():
-    data_Disaster.to_pickle('../Data/Data-Disaster.pkl')
+    data_Disaster.to_pickle('../Data/Data-Disaster-DF.pkl')
     print('Saved data to Pickle')
     return
 
