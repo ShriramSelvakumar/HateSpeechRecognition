@@ -13,9 +13,6 @@ import pickle
 
 
 # Setting display width for panda outputs
-# from py.path import local
-# from sympy.abc import alpha
-
 pd.set_option('display.max_colwidth', 200)
 # PorterStemmer
 ps = nltk.PorterStemmer()
