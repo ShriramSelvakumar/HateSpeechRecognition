@@ -74,7 +74,7 @@ try:
     data_Hate = pd.read_pickle('../Data/Data-Hate-TFIDF-DF.pkl')
 except FileNotFoundError:
     try:
-        data_Hate = pd.read_pickle('../Data/Data-Hate-Stemmed-DF.pkl')
+        data_Hate = pd.read_pickle('../Data/Data-Hate-Stemmed-DF-Backup.pkl')
         # Create clean text attribute/feature
     except FileNotFoundError:
         # Importing Pickle file created in other file
