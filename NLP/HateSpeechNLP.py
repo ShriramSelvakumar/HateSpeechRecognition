@@ -44,6 +44,10 @@ class HateSpeechNLP:
             self.data['stemmed_text_tokens'] = self.data['text_no_stop_words_tokens'].apply(lambda x: self.stem_words(x))
             # Create clean text attribute/feature
             self.data['cleaned_stemmed_text'] = self.data['stemmed_text_tokens'].apply(lambda x: self.join_tokens(x))
+            # Find length of non stemmed tokens and create it as new attribute/feature
+            self.data['length'] = self.data['stemmed_text_tokens'].apply(lambda x: self.finding_length(x))
+            # Find number of non words and create it as new attribute/feature
+            self.data['number_non_words'] = self.data['stemmed_text_tokens'].apply(lambda x: self.finding_non_words(x))
         # Saving to pickle
         if self.save:
             self.save_to_pickle()
@@ -108,6 +112,8 @@ class HateSpeechNLP:
             non_characters = [char for char in re.findall('\W', line) if char not in [' ', '\n']]
             if non_characters:
                 emojis = emojis.append(non_characters)
+        if emojis.empty:
+            emojis[0] = ['😂']
         return emojis[0].unique()
 
     # Function to make separate emojis as individual tokens
@@ -128,6 +134,22 @@ class HateSpeechNLP:
     def stem_words(self, text):
         return_text = [self.ps.stem(word) for word in text]
         return return_text
+
+    @staticmethod
+    def finding_length(text):
+        return len(text)
+
+    @staticmethod
+    def finding_non_words(text):
+        regex = re.compile(r'[\d][\d][\d][\d][\d][\d]')
+        sum_non_words = sum([1 for word in text if word in regex.findall(word)])
+        regex = re.compile(r'[\W]')
+        sum_non_words = sum_non_words + sum([1 for word in text if word in regex.findall(word)])
+        return sum_non_words
+
+    @staticmethod
+    def clean_text(text):
+        return text.split()
 
     # Save DataFrame to pickle
     def save_to_pickle(self):
