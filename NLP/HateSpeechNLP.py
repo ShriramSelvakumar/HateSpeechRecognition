@@ -1,14 +1,16 @@
 import pandas as pd
 import os
 import nltk
+import datetime
 import re
 
 
 class HateSpeechNLP:
-    def __init__(self, data, stem=True, save=True):
+    def __init__(self, data, stem=True, save=False, default_name=False):
         self.data = data
         self.stem = stem
         self.save = save
+        self.default_name = default_name
         # Getting stopwords from NLTK corpus
         self.stopwords = nltk.corpus.stopwords.words('english')
         self.path = '../Data/'
@@ -50,7 +52,7 @@ class HateSpeechNLP:
             self.data['number_non_words'] = self.data['stemmed_text_tokens'].apply(lambda x: self.finding_non_words(x))
         # Saving to pickle
         if self.save:
-            self.save_to_pickle()
+            self.save_to_pickle(self.default_name)
         return self.data
 
     # Function to remove @usernames
@@ -152,12 +154,16 @@ class HateSpeechNLP:
         return text.split()
 
     # Save DataFrame to pickle
-    def save_to_pickle(self):
+    def save_to_pickle(self, default_name):
         os.makedirs(self.path, exist_ok=True)
-        if self.stem:
-            self.data.to_pickle(self.path + 'Data-Hate-Stemmed-DF.pkl')
+        if not default_name:
+            self.data.to_pickle(self.path + 'HateSpeech_Data_' +
+                                datetime.datetime.now().strftime("%d-%m-%Y_%H-%M-%S") + '.pkl')
         else:
-            self.data.to_pickle(self.path + 'Data-Hate-DF.pkl')
+            if self.stem:
+                self.data.to_pickle(self.path + 'Data-Hate-Stemmed-DF.pkl')
+            else:
+                self.data.to_pickle(self.path + 'Data-Hate-DF.pkl')
         print('Saved DataFrame to Pickle')
         return
 
