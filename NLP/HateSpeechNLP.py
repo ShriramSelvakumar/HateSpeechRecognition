@@ -4,6 +4,8 @@ import nltk
 import datetime
 import re
 
+nltk.download('stopwords')
+
 
 class HateSpeechNLP:
     def __init__(self, data, stem=True, save=False, default_name=False):
