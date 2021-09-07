@@ -4,7 +4,7 @@ import pandas as pd
 import datetime
 
 
-# To extract data from twiiter using twitter APIs
+# To extract data from twitter using twitter APIs
 class ReadTwitterData:
 
     def __init__(self, key):
