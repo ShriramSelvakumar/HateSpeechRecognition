@@ -15,6 +15,9 @@ class HateSpeechNLP:
         self.default_name = default_name
         # Getting stopwords from NLTK corpus
         self.stopwords = nltk.corpus.stopwords.words('english')
+        # Adding 'RT' to stopwords
+        self.stopwords.append('RT')
+        # Base path to store data
         self.path = '../Data/'
         if self.stem:
             self.ps = nltk.PorterStemmer()  # PorterStemmer
@@ -24,13 +27,13 @@ class HateSpeechNLP:
         # Removing @usernames
         self.data['text_nousername'] = self.data['text'].apply(lambda x: self.remove_username(x))
         # Removing RT word
-        self.data['text_RT'] = self.data['text_nousername'].apply(lambda x: self.remove_RT(x))
+        # self.data['text_RT'] = self.data['text_nousername'].apply(lambda x: self.remove_RT(x))
         # Removing links
-        self.data['text_links'] = self.data['text_RT'].apply(lambda x: self.remove_links(x))
+        self.data['text_nolinks'] = self.data['text_nousername'].apply(lambda x: self.remove_links(x))
         # Removing Emojis
         # data_Hate['text_emoji'] = data_Hate['text_links'].apply(lambda x: remove_emoji(x))
         # Removing Punctuations
-        self.data['text_nopunct'] = self.data['text_links'].apply(lambda x: self.remove_punctuation(x))
+        self.data['text_nopunct'] = self.data['text_nolinks'].apply(lambda x: self.remove_punctuation(x))
         # Get array of emojis
         self.emojis_array = self.finding_emojis()
         # Separating Emojis - to make each emoji as a single token
