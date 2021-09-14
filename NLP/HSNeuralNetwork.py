@@ -11,6 +11,7 @@ import datetime
 import pickle
 
 
+# Hate speech NN train and test
 path = '../Data/'
 
 # Import HateSpeech DataFrame
