@@ -10,7 +10,7 @@ pd.set_option('display.max_colwidth', 200)
 # PorterStemmer
 ps = nltk.PorterStemmer()
 
-
+# NLP functions
 def stem_words(text):
     return_text = [ps.stem(word) for word in text]
     return return_text
