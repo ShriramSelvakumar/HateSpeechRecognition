@@ -11,7 +11,7 @@ import datetime
 import pickle
 
 
-path = '../Data/'
+path = '../Models/'
 
 # Import HateSpeech DataFrame
 try:
@@ -30,7 +30,7 @@ def clean_text(text):
 # Method to train NN model
 def train(X, y, model):
     # Vectorizer and Scaler
-    tfidf_vectorizer = TfidfVectorizer(analyzer=clean_text)
+    tfidf_vectorizer = TfidfVectorizer(analyzer=clean_text, ngram_range=(1, 2))
     standard_scaler = StandardScaler()
 
     # Vectorization of text data into numerical data
@@ -55,15 +55,24 @@ def test(X, y):
         trained_scaler = pickle.load(open(path + "StandardScaler-NN_02-09-2021_21-26-27.pkl", "rb"))
         trained_NN_model = pickle.load(open(path + "NN-Model_02-09-2021_22-13-11.pkl", "rb"))
 
-        tfidf_vectorizer = TfidfVectorizer(analyzer=clean_text, vocabulary=trained_tfidf_vocabulary)
+        tfidf_vectorizer = TfidfVectorizer(analyzer=clean_text, vocabulary=trained_tfidf_vocabulary, ngram_range=(1, 2))
         X_test_tfidf = tfidf_vectorizer.fit_transform(X.cleaned_stemmed_text)
         X_test_scaled = trained_scaler.transform(X.loc[:, ['length', 'number_non_words']])
         X_test_features = pd.concat([pd.DataFrame(X_test_scaled, columns=['length', 'number_non_words']),
                                      pd.DataFrame(X_test_tfidf.toarray())], axis=1)
         y_pred = trained_NN_model.predict(X_test_features)
+        print('Micro Values -----')
         print("Precision : ", precision_score(y, y_pred, average="micro"))
         print("Recall : ", recall_score(y, y_pred, average='micro'))
+        print('Macro Values -----')
+        print("Precision : ", precision_score(y, y_pred, average="macro"))
+        print("Recall : ", recall_score(y, y_pred, average='macro'))
+        print('Weighted Values -----')
+        print("Precision : ", precision_score(y, y_pred, average="weighted"))
+        print("Recall : ", recall_score(y, y_pred, average='weighted'))
+        print('Confusion Matrix -----')
         print(confusion_matrix(y, y_pred))
+        print("")
         plot_confusion_matrix(trained_NN_model, X_test_features, y)
         plt.show()
         return y_pred
