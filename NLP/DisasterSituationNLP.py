@@ -7,7 +7,7 @@ import re
 nltk.download('stopwords')
 
 
-class HateSpeechNLP:
+class DisasterSituationNLP:
     def __init__(self, data, stem=True, save=False, default_name=False):
         self.data = data
         self.stem = stem
@@ -26,12 +26,8 @@ class HateSpeechNLP:
     def fit_transform(self):
         # Removing @usernames
         self.data['text_nousername'] = self.data['text'].apply(lambda x: self.remove_username(x))
-        # Removing RT word
-        # self.data['text_RT'] = self.data['text_nousername'].apply(lambda x: self.remove_RT(x))
         # Removing links
         self.data['text_nolinks'] = self.data['text_nousername'].apply(lambda x: self.remove_links(x))
-        # Removing Emojis
-        # data_Hate['text_emoji'] = data_Hate['text_links'].apply(lambda x: remove_emoji(x))
         # Removing Punctuations
         self.data['text_nopunct'] = self.data['text_nolinks'].apply(lambda x: self.remove_punctuation(x))
         # Get array of emojis
@@ -61,38 +57,35 @@ class HateSpeechNLP:
             self.data['length_original_text'] = self.data['cleaned_text'].apply(lambda x: self.finding_length(x))
             # Find number of non words and create it as new attribute/feature
             self.data['number_non_words'] = self.data['stemmed_text_tokens'].apply(lambda x:
-                                                                                   self.finding_non_words_2(x))
+                                                                                   self.finding_non_words(x))
         # Saving to pickle
         if self.save:
             self.save_to_pickle(self.default_name)
-        return self.data.loc[:, ['text', 'cleaned_stemmed_text', 'length', 'length_original_tokens',
-                                 'length_original_text', 'number_non_words', 'final_label']]
+        return self.data.loc[:, ['text', 'cleaned_stemmed_text', 'length', 'length_original_tokens', 'keyword',
+                                 'length_original_text', 'number_non_words', 'target']]
 
     # Function to remove @usernames
     @staticmethod
     def remove_username(text):
         return " ".join(re.split('[@][a-zA-Z0-9_]+', text))
 
-    # Function to remove 'RT' word
-    @staticmethod
-    def remove_RT(text):
-        return_text = " ".join(re.split('[R][T]', text))
-        return return_text
-
     # Removing Punctuations
     @staticmethod
     def remove_punctuation(text):
         # Removing "&amp"
         return_text = " ".join(re.split('[&][a][m][p]', text))
-        # Punctuations without '
-        punctuations = '!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~'
+        # Removing '-' with whitespace around it - to protect 'I-77'
+        # return_text = " ".join(re.split('\s-\s', return_text))
+        # Punctuations without ' & -
+        punctuations = '!"#$%&()*+,./:;<=>?@[\\]^_`{|}~'
         # Removing regular punctuations
         return_text = " ".join(re.split('[' + punctuations + ']+', return_text))
         # sometimes ' connect words - "I'm" - below line outputs - "Im"
         return_text = "".join(re.split('[\'’]', return_text))
         #  Removing other punctuations
-        return_text = " ".join(re.split('[…“”—⁣️‼„‘´, ･─•⠀❓¿˽।‍ ‍‍]+', return_text))
+        return_text = " ".join(re.split('[ุ…“”—⁣️‼„‘´, ･─•⠀❓¡˃－！❞〝≧¨❛⏪≦、―«：–❝˂-︿¿˽।‍ ‍‍̣]+', return_text))
         return_text = " ".join(re.split(r'\\', return_text))
+        return_text = " ".join(re.split(r'-', return_text))
         return return_text
 
     # Function to remove links
@@ -100,12 +93,6 @@ class HateSpeechNLP:
     def remove_links(text):
         # return_text = " ".join(re.split(r'http\S+', text))
         return_text = " ".join(re.split(r'http[a-zA-Z0-9.\/:]+|https[a-zA-Z0-9.\/:&]+', text))
-        return return_text
-
-    # Function to remove emoji strings - in format "&#12378"
-    @staticmethod
-    def remove_emoji(text):
-        return_text = " ".join(re.split('[&#][0-9]+', text))
         return return_text
 
     # Function to Tokenize
@@ -158,14 +145,6 @@ class HateSpeechNLP:
     def finding_non_words(text):
         regex = re.compile(r'[\d][\d][\d][\d][\d][\d]')
         sum_non_words = sum([1 for word in text if word in regex.findall(word)])
-        regex = re.compile(r'[\W]')
-        sum_non_words = sum_non_words + sum([1 for word in text if word in regex.findall(word)])
-        return sum_non_words
-
-    @staticmethod
-    def finding_non_words_2(text):
-        regex = re.compile(r'[\d][\d][\d][\d][\d][\d]')
-        sum_non_words = sum([1 for word in text if word in regex.findall(word)])
         regex = re.compile(r'[\d][\d][\d][\d]')
         sum_non_words = sum_non_words + sum([1 for word in text if word in regex.findall(word)])
         regex = re.compile(r'[\W]')
@@ -180,13 +159,13 @@ class HateSpeechNLP:
     def save_to_pickle(self, default_name):
         os.makedirs(self.path, exist_ok=True)
         if not default_name:
-            self.data.to_pickle(self.path + 'HateSpeech_DataFrame_' +
+            self.data.to_pickle(self.path + 'DisasterSituation_DataFrame_' +
                                 datetime.datetime.now().strftime("%d-%m-%Y_%H-%M-%S") + '.pkl')
         else:
             if self.stem:
-                self.data.to_pickle(self.path + 'Data-Hate-Stemmed-DF.pkl')
+                self.data.to_pickle(self.path + 'Data-DS-Stemmed-DF.pkl')
             else:
-                self.data.to_pickle(self.path + 'Data-Hate-DF.pkl')
+                self.data.to_pickle(self.path + 'Data-DS-DF.pkl')
         print('Saved DataFrame to Pickle')
         return
 
