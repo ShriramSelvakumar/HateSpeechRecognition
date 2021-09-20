@@ -1,7 +1,7 @@
 import pandas as pd
 from HateSpeechNLP import HateSpeechNLP
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.naive_bayes import MultinomialNB
+from sklearn.naive_bayes import MultinomialNB, GaussianNB
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import precision_score, recall_score, confusion_matrix, plot_confusion_matrix
@@ -13,14 +13,14 @@ import pickle
 
 path = '../Data/'
 
-# Import HateSpeech DataFrame
+# Import HateSpeech Training data
 try:
     data_Hate = pd.read_pickle('../Data/Data-Hate-Stemmed-DF.pkl')
 except FileNotFoundError:
-    # Import HS_Data
     data_Hate_HS = pd.read_csv('../Data/HS_DATA_TRAIN.csv', sep=',')
     hs_NLP = HateSpeechNLP(data_Hate_HS, save=True, default_name=True)
     data_Hate = hs_NLP.fit_transform()
+    print("Hate Speech Training data is Transformed for training -------------")
 
 
 def clean_text(text):
@@ -29,38 +29,31 @@ def clean_text(text):
 
 # Method to train RF model
 def train(X, y, model):
+    print('Training starts ----------------')
     # Vectorizer and Scaler
-    tfidf_vectorizer = TfidfVectorizer(analyzer=clean_text)
-    standard_scaler = StandardScaler()
+    tfidf_vectorizer = TfidfVectorizer(analyzer=clean_text, ngram_range=(1, 2))
 
     # Vectorization of text data into numerical data
     X_train_tfidf = tfidf_vectorizer.fit_transform(X.cleaned_stemmed_text)
-    # Scaling length, number_non_words features
-    X_train_scaled = standard_scaler.fit_transform(X.loc[:, ['length', 'number_non_words']])
-    # Saving tfidf and scaler objects to use the same when testing
-    save_tfidf_scaler(tfidf_vectorizer, standard_scaler)
+    save_tfidf(tfidf_vectorizer)
 
-    # Combining tfidf and scaler outputs into single dataset - for training
-    X_train_features = pd.concat([pd.DataFrame(X_train_scaled, columns=['length', 'number_non_words']),
-                                  pd.DataFrame(X_train_tfidf.toarray())], axis=1)
-    model.fit(X_train_features, y)
+    # Fitting the model to training data
+    model.fit(pd.DataFrame(X_train_tfidf.toarray()), y)
     save_RF_model(model)
+    print('Training ends ----------------')
     return model
 
 
 def test(X, y):
     # Load trained model
     try:
-        trained_tfidf_vocabulary = pickle.load(open(path + "xx", "rb"))
-        trained_scaler = pickle.load(open(path + "xx", "rb"))
-        trained_NB_model = pickle.load(open(path + "xx", "rb"))
+        trained_tfidf_vocabulary = pickle.load(open(path + "TFIDF-Vocabulary-NB_09-09-2021_17-17-13.pkl", "rb"))
+        trained_NB_model = pickle.load(open(path + "NB-Model_09-09-2021_17-17-18.pkl", "rb"))
 
-        tfidf_vectorizer = TfidfVectorizer(analyzer=clean_text, vocabulary=trained_tfidf_vocabulary)
+        tfidf_vectorizer = TfidfVectorizer(analyzer=clean_text, vocabulary=trained_tfidf_vocabulary, ngram_range=(1, 2))
         X_test_tfidf = tfidf_vectorizer.fit_transform(X.cleaned_stemmed_text)
-        X_test_scaled = trained_scaler.transform(X.loc[:, ['length', 'number_non_words']])
-        X_test_features = pd.concat([pd.DataFrame(X_test_scaled, columns=['length', 'number_non_words']),
-                                     pd.DataFrame(X_test_tfidf.toarray())], axis=1)
-        y_pred = trained_NB_model.predict(X_test_features)
+        y_pred = trained_NB_model.predict(pd.DataFrame(X_test_tfidf.toarray()))
+
         print('Micro Values -----')
         print("Precision : ", precision_score(y, y_pred, average="micro"))
         print("Recall : ", recall_score(y, y_pred, average='micro'))
@@ -72,20 +65,18 @@ def test(X, y):
         print("Recall : ", recall_score(y, y_pred, average='weighted'))
         print('Confusion Matrix -----')
         print(confusion_matrix(y, y_pred))
+        print("")
         return y_pred
 
     except FileNotFoundError:
         print('Run train method before test method')
 
 
-def save_tfidf_scaler(tfidf, scaler):
+def save_tfidf(tfidf):
     os.makedirs(path, exist_ok=True)
     pickle.dump(tfidf.vocabulary_, open(path + 'TFIDF-Vocabulary-NB_' +
                                         datetime.datetime.now().strftime("%d-%m-%Y_%H-%M-%S") + '.pkl', "wb"))
     print('Saved TFIDF-NB to Pickle')
-    pickle.dump(scaler, open(path + 'StandardScaler-NB_' +
-                             datetime.datetime.now().strftime("%d-%m-%Y_%H-%M-%S") + '.pkl', "wb"))
-    print('Saved Scaler-NB to Pickle')
     return
 
 
@@ -111,7 +102,8 @@ y_val.reset_index(drop=True, inplace=True)
 nb_clf = MultinomialNB()
 
 # Calling training method to start training RF model
-train(X_train, y_train, nb_clf)
+# train(X_train, y_train, nb_clf)
+
 
 # Calling test method to test the accuracy of the trained RF model
 print('Test Result on VAL set')
