@@ -48,7 +48,7 @@ def train(X, y, X_valid, y_valid):
     X_train_scaled = standard_scaler.fit_transform(X.loc[:, ['length', 'length_original_tokens',
                                                              'length_original_text', 'number_non_words']])
     X_valid_scaled = standard_scaler.transform(X_valid.loc[:, ['length', 'length_original_tokens',
-                                                             'length_original_text', 'number_non_words']])
+                                                               'length_original_text', 'number_non_words']])
     # Saving tfidf and scaler objects to use the same when testing
     save_tfidf_scaler(tfidf_vectorizer, standard_scaler)
 
@@ -66,7 +66,7 @@ def train(X, y, X_valid, y_valid):
     model.add(keras.layers.Dense(5, activation="relu"))
     model.add(keras.layers.Dense(5, activation="relu"))
     model.add(keras.layers.Dense(4, activation="softmax"))
-    model.compile(loss="sparse_categorical_crossentropy", optimizer="sgd", metrics=["accuracy"])
+    model.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
     history = model.fit(X_train_features, y['final_label'], epochs=30, validation_data=(X_valid_features,
                                                                                         y_valid['final_label']))
 
