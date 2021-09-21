@@ -23,8 +23,8 @@ output_features = ['final_label', 'binary_label']
 
 # Import HateSpeech DataFrame
 try:
-    data_Hate = pd.read_pickle(data_path + 'HateSpeech_DataFrame_19-09-2021_12-57-00.pkl').loc[:, input_features +
-                                                                                                output_features]
+    data_Hate = pd.read_pickle(data_path + 'HateSpeech_DataFrame_21-09-2021_15-25-53.pkl').loc[:, input_features+
+                                                                                                  output_features]
 except FileNotFoundError:
     # Import HS_Data
     data_Hate_HS = pd.read_csv(data_path + 'HS_DATA_NEW_TRAIN.csv', sep=',')
@@ -62,7 +62,7 @@ def train(X, y, X_valid, y_valid):
 
     # Keras model
     model = keras.models.Sequential()
-    model.add(keras.layers.Flatten(input_shape=X_train_features.shape))
+    model.add(keras.layers.InputLayer(input_shape=X_train_features.shape[1]))
     model.add(keras.layers.Dense(5, activation="relu"))
     model.add(keras.layers.Dense(5, activation="relu"))
     model.add(keras.layers.Dense(4, activation="softmax"))
@@ -137,9 +137,9 @@ y_val.reset_index(drop=True, inplace=True)
 
 # Train Keras Sequential model
 seq_history, seq_model = train(X_train, y_train, X_val, y_val)
-pd.DataFrame(seq_history.history).plot(figsize=(8, 5))
-plt.grid(True)
-plt.show()
+# pd.DataFrame(seq_history.history).plot(figsize=(8, 5))
+# plt.grid(True)
+# plt.show()
 
 
 
