@@ -41,7 +41,7 @@ def clean_text(text):
 
 def train(X, y, X_valid, y_valid):
     # Vectorizer and Scaler
-    tfidf_vectorizer = TfidfVectorizer(ngram_range=(1, 2), max_features=30000)
+    tfidf_vectorizer = TfidfVectorizer(analyzer=clean_text, ngram_range=(1, 1))
     standard_scaler = StandardScaler()
 
     # Vectorization of text data into numerical data
@@ -73,7 +73,7 @@ def train(X, y, X_valid, y_valid):
         class_weights[i] = class_weights_list[i]
 
     # Implementing Callbacks - Saving checkpoints & Early Stopping
-    checkpoint_cb = keras.callbacks.ModelCheckpoint(model_path + "Keras_DR.h5", save_best_only=True)
+    checkpoint_cb = keras.callbacks.ModelCheckpoint(model_path + "Keras_DR_1g.h5", save_best_only=True)
     early_stopping_cb = keras.callbacks.EarlyStopping(patience=10, restore_best_weights=True)
 
     # Keras model
@@ -114,12 +114,11 @@ def test(X, y):
 
         trained_tfidf_vocabulary = pickle.load(open(tfidf_file, "rb"))
         trained_scaler = pickle.load(open(standard_scaler_file, "rb"))
-        trained_NN_model = keras.models.load_model(model_path + 'Keras_DR' + '.h5')
+        trained_NN_model = keras.models.load_model(model_path + 'Keras_DR_1g' + '.h5')
         print("Loaded TFIDF Model -", tfidf_file)
         print("Loaded StandardScaler Model -", standard_scaler_file)
 
-        tfidf_vectorizer = TfidfVectorizer(vocabulary=trained_tfidf_vocabulary, max_features=30000,
-                                           ngram_range=(1, 2))
+        tfidf_vectorizer = TfidfVectorizer(vocabulary=trained_tfidf_vocabulary, analyzer=clean_text, ngram_range=(1, 1))
         X_test_tfidf = tfidf_vectorizer.fit_transform(X.cleaned_stemmed_text)
         X_test_scaled = trained_scaler.transform(X.loc[:, ['length', 'length_original_tokens', 'length_original_text',
                                                            'number_non_words']])
