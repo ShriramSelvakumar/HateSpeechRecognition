@@ -124,6 +124,7 @@ def test(X, y):
                                                                           'length_original_text', 'number_non_words']),
                                      pd.DataFrame(X_test_tfidf.toarray())], axis=1)
         y_pred = np.argmax(trained_NN_model.predict(X_test_features), axis=-1)
+
         # y_pred = trained_NN_model.predict_classes(X_test_features)
         print('Micro Values -----')
         print("Precision : ", precision_score(y, y_pred, average="micro"))
