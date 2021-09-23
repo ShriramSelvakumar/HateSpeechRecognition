@@ -5,7 +5,9 @@ import os
 import datetime
 import tensorflow as tf
 from tensorflow import keras
+from tensorflow.keras import layers
 from sklearn.feature_extraction.text import TfidfVectorizer
+from tensorflow.keras.layers.experimental.preprocessing import TextVectorization
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.utils import class_weight
@@ -40,28 +42,6 @@ def clean_text(text):
 
 
 def train(X, y, X_valid, y_valid):
-    # Vectorizer and Scaler
-    tfidf_vectorizer = TfidfVectorizer(analyzer=clean_text, ngram_range=(1, 4))
-    standard_scaler = StandardScaler()
-
-    # Vectorization of text data into numerical data
-    X_train_tfidf = tfidf_vectorizer.fit_transform(X.cleaned_stemmed_text)
-    X_valid_tfidf = tfidf_vectorizer.transform(X_valid.cleaned_stemmed_text)
-    # Scaling integer features
-    X_train_scaled = standard_scaler.fit_transform(X.loc[:, ['length', 'length_original_tokens',
-                                                             'length_original_text', 'number_non_words']])
-    X_valid_scaled = standard_scaler.transform(X_valid.loc[:, ['length', 'length_original_tokens',
-                                                               'length_original_text', 'number_non_words']])
-    # Saving tfidf and scaler objects to use the same when testing
-    save_tfidf_scaler(tfidf_vectorizer, standard_scaler)
-
-    # Combining tfidf and scaler outputs into single dataset - for training
-    X_train_features = pd.concat([pd.DataFrame(X_train_scaled, columns=['length', 'length_original_tokens',
-                                                                        'length_original_text', 'number_non_words']),
-                                  pd.DataFrame(X_train_tfidf.toarray())], axis=1)
-    X_valid_features = pd.concat([pd.DataFrame(X_valid_scaled, columns=['length', 'length_original_tokens',
-                                                                        'length_original_text', 'number_non_words']),
-                                  pd.DataFrame(X_valid_tfidf.toarray())], axis=1)
 
     # Computing Class Weights
     y_classes = list(y['final_label_int'].unique())
@@ -69,62 +49,87 @@ def train(X, y, X_valid, y_valid):
     class_weights_list = class_weight.compute_class_weight('balanced',  y_classes, y['final_label_int'])
     # Calculated class weights - [3.14126016, 0.89438657, 0.43002226, 4.19972826] - assuming for [Hate, None, Off, Prf]
     class_weights = {}
-    for i in range(0, 4):
+    for i in range(0, len(class_weights_list)):
         class_weights[i] = class_weights_list[i]
 
     # Implementing Callbacks - Saving checkpoints & Early Stopping
-    checkpoint_cb = keras.callbacks.ModelCheckpoint(model_path + "Keras_sgd.h5", save_best_only=True)
+    checkpoint_cb = keras.callbacks.ModelCheckpoint(model_path + "Keras_CNN_2.h5", save_best_only=True)
     early_stopping_cb = keras.callbacks.EarlyStopping(patience=10, restore_best_weights=True)
 
-    # Keras model
-    model = keras.models.Sequential()
-    model.add(keras.layers.InputLayer(input_shape=X_train_features.shape[1:]))
-    model.add(keras.layers.Dense(64, activation="relu"))
-    model.add(keras.layers.Dense(32, activation="relu"))
-    model.add(keras.layers.Dense(16, activation="relu"))
-    model.add(keras.layers.Dense(16, activation="relu"))
-    model.add(keras.layers.Dense(16, activation="relu"))
-    model.add(keras.layers.Dense(4, activation="softmax"))
-    model.compile(loss="sparse_categorical_crossentropy", optimizer="sgd", metrics=["accuracy"])
-    history = model.fit(X_train_features, y['final_label_int'], epochs=30, validation_data=(X_valid_features,
-                                                                                            y_valid['final_label_int']),
+    # Constants to train the model
+    # max_features = 183000
+    max_features = 22000
+    embedding_dim = 128
+
+    # Declare Text Vectorization
+    vectorize_layer = TextVectorization(max_tokens=max_features, standardize=None, split='whitespace', ngrams=2,
+                                        output_mode='tf-idf')
+    # Learn vocabulary from train data
+    vectorize_layer.adapt(np.asarray(X.cleaned_stemmed_text))
+    pickle.dump({'config': vectorize_layer.get_config(), 'weights': vectorize_layer.get_weights()},
+                open(model_path + "tv_layer_2.pkl", "wb"))
+    print('Saved TextVectorizer - In Pickle===========================================')
+    # Load Pickle
+    # from_disk = pickle.load(open(model_path + "tv_layer.pkl", "rb"))
+    X_train_vectorized = vectorize_layer(np.asarray(X.cleaned_stemmed_text))
+    X_valid_vectorized = vectorize_layer(np.asarray(X_valid.cleaned_stemmed_text))
+
+    # TF-IDF from scikit learn
+    # tfidf_vectorizer = TfidfVectorizer(ngram_range=(1, 2), dtype=np.float32)
+    # X_train_tfidf = tfidf_vectorizer.fit_transform(X_train.cleaned_stemmed_text)
+    # X_train_feature = pd.DataFrame(X_train_tfidf.toarray())
+    # os.makedirs(model_path + 'TFIDF/', exist_ok=True)
+    # pickle.dump(tfidf_vectorizer.vocabulary_, open(model_path + 'TFIDF/' + 'TFIDF-Vocabulary-Keras_' +
+    #                                            datetime.datetime.now().strftime("%d-%m-%Y_%H-%M-%S") + '.pkl', "wb"))
+
+    # Building model
+    inputs = keras.layers.Input(shape=(None,))
+
+    # Embedding layer - To map input to certain dimensionality
+    x_embedding = layers.Embedding(max_features, embedding_dim)(inputs)
+    x_embedding = layers.Dropout(0.5)(x_embedding)
+
+    # Conv1D + global max pooling
+    x_CNN = layers.Conv1D(128, 7, padding='valid', activation='relu', strides=3)(x_embedding)
+    x_CNN = layers.Conv1D(128, 7, padding='valid', activation='relu', strides=3)(x_CNN)
+    x_CNN = layers.GlobalMaxPool1D()(x_CNN)
+
+    # Hidden Layers
+    x_hidden = layers.Dense(128, activation='relu')(x_CNN)
+    x_hidden = layers.Dropout(0.5)(x_hidden)
+
+    # Output layer
+    output = layers.Dense(4, activation='softmax')(x_hidden)
+
+    # Model
+    model = keras.Model(inputs, output)
+
+    # Compile
+    model.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
+
+    # Fitting the model
+    history = model.fit(X_train_vectorized, y['final_label_int'], epochs=3,
+                        validation_data=(X_valid_vectorized, y_valid['final_label_int']),
                         callbacks=[checkpoint_cb, early_stopping_cb], class_weight=class_weights)
 
     return history, model
 
 
-def test(X, y):
+def test(X, y, model_name, vectorizer_name):
     # Load trained model
     try:
-        tfidf_path = model_path + 'TFIDF/'
-        standard_scaler_path = model_path + 'StandardScaler/'
-        file_type = '\*pkl'
-        tfidf_files = glob.glob(tfidf_path + file_type)
-        standard_scaler_files = glob.glob(standard_scaler_path + file_type)
-        try:
-            tfidf_file = max(tfidf_files, key=os.path.getctime)
-            standard_scaler_file = max(standard_scaler_files, key=os.path.getctime)
-        except ValueError:
-            # Added this exception because try statements are throwing errors in Linux
-            tfidf_file = model_path + 'TFIDF/' + 'TFIDF-Vocabulary-Keras_21-09-2021_18-46-42.pkl'
-            standard_scaler_file = model_path + 'StandardScaler/' + 'StandardScaler-Keras_21-09-2021_18-46-42.pkl'
+        from_disk = pickle.load(open(model_path + vectorizer_name + ".pkl", "rb"))
+        loaded_vectorized = TextVectorization.from_config(from_disk['config'])
+        loaded_vectorized.set_weights(from_disk['weights'])
 
-        trained_tfidf_vocabulary = pickle.load(open(tfidf_file, "rb"))
-        trained_scaler = pickle.load(open(standard_scaler_file, "rb"))
-        trained_NN_model = keras.models.load_model(model_path + 'Keras_sgd' + '.h5')
-        print("Loaded TFIDF Model -", tfidf_file)
-        print("Loaded StandardScaler Model -", standard_scaler_file)
+        X_test_vectorized = loaded_vectorized(np.asarray(X.cleaned_stemmed_text))
 
-        tfidf_vectorizer = TfidfVectorizer(analyzer=clean_text, vocabulary=trained_tfidf_vocabulary,
-                                           ngram_range=(1, 4))
-        X_test_tfidf = tfidf_vectorizer.fit_transform(X.cleaned_stemmed_text)
-        X_test_scaled = trained_scaler.transform(X.loc[:, ['length', 'length_original_tokens', 'length_original_text',
-                                                           'number_non_words']])
-        X_test_features = pd.concat([pd.DataFrame(X_test_scaled, columns=['length', 'length_original_tokens',
-                                                                          'length_original_text', 'number_non_words']),
-                                     pd.DataFrame(X_test_tfidf.toarray())], axis=1)
-        y_pred = np.argmax(trained_NN_model.predict(X_test_features), axis=-1)
+        # Load trained model
+        trained_NN_model = keras.models.load_model(model_path + model_name + '.h5')
+        # Print model summary
+        print(trained_NN_model.summary())
 
+        y_pred = np.argmax(trained_NN_model.predict(np.asarray(X_test_vectorized)), axis=-1)
         # y_pred = trained_NN_model.predict_classes(X_test_features)
         print('Micro Values -----')
         print("Precision : ", precision_score(y, y_pred, average="micro"))
@@ -171,22 +176,20 @@ y_train.reset_index(drop=True, inplace=True)
 y_val.reset_index(drop=True, inplace=True)
 
 label_encoder = LabelEncoder()
-label_encoder.fit(['NONE', 'PRFN', 'OFFN', 'HATE'], )
+label_encoder.fit(['NONE', 'PRFN', 'OFFN', 'HATE'])
 y_train['final_label_int'] = label_encoder.transform(y_train['final_label'])
 y_val['final_label_int'] = label_encoder.transform(y_val['final_label'])
 
-# Train Keras Sequential model
 print("==================================================================================================")
 print("Training starts")
-seq_history, seq_model = train(X_train, y_train, X_val, y_val)
-pd.DataFrame(seq_history.history).plot(figsize=(8, 5))
-plt.grid(True)
-plt.show()
+fun_history, fun_model = train(X_train, y_train, X_val, y_val)
+fun_model.save(model_path + 'Keras_CNN_2.h5', save_format='h5')
 
-# Testing the validation set
 print("==================================================================================================")
-print("Evaluating Validation Set")
-test(X_val, y_val['final_label_int'])
+print("==================================================================================================")
+print("==========================================CNN-1===================================================")
+print("Validation")
+test(X_val, y_val['final_label_int'], model_name='Keras_CNN', vectorizer_name='tv_layer_CNN')
 
 # Testing the test set
 # Importing HS_DATA - Test set
@@ -197,13 +200,29 @@ data_Test = hs_NLP.fit_transform()
 print("Evaluating Test Data")
 print(data_Test.info())
 data_Test['final_label_int'] = label_encoder.transform(data_Test['final_label'])
-y_test = test(data_Test, data_Test['final_label_int'])
+y_test = test(data_Test, data_Test['final_label_int'], model_name='Keras_CNN',
+              vectorizer_name='tv_layer')
+
+print("==================================================================================================")
+print("==================================================================================================")
+print("==========================================CNN-2===================================================")
+print("Validation")
+test(X_val, y_val['final_label_int'], model_name='Keras_CNN_2', vectorizer_name='tv_layer_2')
+
+# Testing the test set
+# Importing HS_DATA - Test set
+print("==================================================================================================")
+data_Hate_Test = pd.read_csv(data_path + 'HS_DATA_NEW_TEST.csv', sep=',')
+hs_NLP = HateSpeechNLP(data_Hate_Test, save=False, default_name=False, features=input_features+output_features)
+data_Test = hs_NLP.fit_transform()
+print("Evaluating Test Data")
+print(data_Test.info())
+data_Test['final_label_int'] = label_encoder.transform(data_Test['final_label'])
+y_test_2 = test(data_Test, data_Test['final_label_int'], model_name='Keras_CNN_2',
+                vectorizer_name='tv_layer_2')
 
 
-
-
-
-
+print("End of File")
 
 
 
