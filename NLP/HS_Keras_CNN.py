@@ -182,14 +182,14 @@ y_val['final_label_int'] = label_encoder.transform(y_val['final_label'])
 
 print("==================================================================================================")
 print("Training starts")
-fun_history, fun_model = train(X_train, y_train, X_val, y_val)
-fun_model.save(model_path + 'Keras_CNN_2.h5', save_format='h5')
+# fun_history, fun_model = train(X_train, y_train, X_val, y_val)
+# fun_model.save(model_path + 'Keras_CNN_2.h5', save_format='h5')
 
 print("==================================================================================================")
 print("==================================================================================================")
 print("==========================================CNN-1===================================================")
 print("Validation")
-test(X_val, y_val['final_label_int'], model_name='Keras_CNN', vectorizer_name='tv_layer_CNN')
+test(X_val, y_val['final_label_int'], model_name='Keras_CNN', vectorizer_name='tv_layer')
 
 # Testing the test set
 # Importing HS_DATA - Test set

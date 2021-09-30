@@ -20,17 +20,19 @@ pd.set_option('display.max_colwidth', 200)
 # Constants
 data_path = '../Data/'
 model_path = '../Models/'
+train_file_name = 'HS_DATA_BINARY_TRAIN.csv'
+test_file_name = 'HS_DATA_NEW_TEST.csv'
 input_features = ['text', 'cleaned_stemmed_text', 'length', 'length_original_tokens', 'length_original_text',
                   'number_non_words']
 output_features = ['final_label', 'binary_label']
 
 # Import HateSpeech DataFrame
 try:
-    data_Hate = pd.read_pickle(data_path + 'HateSpeech_DataFrame_21-09-2021_15-25-53.pkl').loc[:, input_features +
+    data_Hate = pd.read_pickle(data_path + 'HateSpeech_DataFrame_30-09-2021_18-48-18.pkl').loc[:, input_features +
                                                                                                   output_features]
 except FileNotFoundError:
     # Import HS_Data
-    data_Hate_HS = pd.read_csv(data_path + 'HS_DATA_NEW_TRAIN.csv', sep=',')
+    data_Hate_HS = pd.read_csv(data_path + train_file_name, sep=',')
     hs_NLP = HateSpeechNLP(data_Hate_HS, save=True, default_name=False, features=input_features+output_features)
     data_Hate = hs_NLP.fit_transform()
 
@@ -41,7 +43,7 @@ def clean_text(text):
 
 def train(X, y, X_valid, y_valid):
     # Vectorizer and Scaler
-    tfidf_vectorizer = TfidfVectorizer(analyzer=clean_text, ngram_range=(1, 4))
+    tfidf_vectorizer = TfidfVectorizer(analyzer=clean_text, ngram_range=(1, 1))
     standard_scaler = StandardScaler()
 
     # Vectorization of text data into numerical data
@@ -69,11 +71,11 @@ def train(X, y, X_valid, y_valid):
     class_weights_list = class_weight.compute_class_weight('balanced',  y_classes, y['final_label_int'])
     # Calculated class weights - [3.14126016, 0.89438657, 0.43002226, 4.19972826] - assuming for [Hate, None, Off, Prf]
     class_weights = {}
-    for i in range(0, 4):
+    for i in range(0, len(class_weights_list)):
         class_weights[i] = class_weights_list[i]
 
     # Implementing Callbacks - Saving checkpoints & Early Stopping
-    checkpoint_cb = keras.callbacks.ModelCheckpoint(model_path + "Keras_sgd.h5", save_best_only=True)
+    checkpoint_cb = keras.callbacks.ModelCheckpoint(model_path + "Keras_duplicate_data.h5", save_best_only=True)
     early_stopping_cb = keras.callbacks.EarlyStopping(patience=10, restore_best_weights=True)
 
     # Keras model
@@ -85,7 +87,7 @@ def train(X, y, X_valid, y_valid):
     model.add(keras.layers.Dense(16, activation="relu"))
     model.add(keras.layers.Dense(16, activation="relu"))
     model.add(keras.layers.Dense(4, activation="softmax"))
-    model.compile(loss="sparse_categorical_crossentropy", optimizer="sgd", metrics=["accuracy"])
+    model.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
     history = model.fit(X_train_features, y['final_label_int'], epochs=30, validation_data=(X_valid_features,
                                                                                             y_valid['final_label_int']),
                         callbacks=[checkpoint_cb, early_stopping_cb], class_weight=class_weights)
@@ -111,12 +113,12 @@ def test(X, y):
 
         trained_tfidf_vocabulary = pickle.load(open(tfidf_file, "rb"))
         trained_scaler = pickle.load(open(standard_scaler_file, "rb"))
-        trained_NN_model = keras.models.load_model(model_path + 'Keras_sgd' + '.h5')
+        trained_NN_model = keras.models.load_model(model_path + 'Keras_duplicate_data' + '.h5')
         print("Loaded TFIDF Model -", tfidf_file)
         print("Loaded StandardScaler Model -", standard_scaler_file)
 
         tfidf_vectorizer = TfidfVectorizer(analyzer=clean_text, vocabulary=trained_tfidf_vocabulary,
-                                           ngram_range=(1, 4))
+                                           ngram_range=(1, 1))
         X_test_tfidf = tfidf_vectorizer.fit_transform(X.cleaned_stemmed_text)
         X_test_scaled = trained_scaler.transform(X.loc[:, ['length', 'length_original_tokens', 'length_original_text',
                                                            'number_non_words']])
@@ -175,23 +177,23 @@ label_encoder.fit(['NONE', 'PRFN', 'OFFN', 'HATE'], )
 y_train['final_label_int'] = label_encoder.transform(y_train['final_label'])
 y_val['final_label_int'] = label_encoder.transform(y_val['final_label'])
 
-# Train Keras Sequential model
-print("==================================================================================================")
-print("Training starts")
-seq_history, seq_model = train(X_train, y_train, X_val, y_val)
-pd.DataFrame(seq_history.history).plot(figsize=(8, 5))
-plt.grid(True)
-plt.show()
-
-# Testing the validation set
-print("==================================================================================================")
-print("Evaluating Validation Set")
-test(X_val, y_val['final_label_int'])
+# # Train Keras Sequential model
+# print("==================================================================================================")
+# print("Training starts")
+# seq_history, seq_model = train(X_train, y_train, X_val, y_val)
+# pd.DataFrame(seq_history.history).plot(figsize=(8, 5))
+# plt.grid(True)
+# plt.show()
+#
+# # Testing the validation set
+# print("==================================================================================================")
+# print("Evaluating Validation Set")
+# test(X_val, y_val['final_label_int'])
 
 # Testing the test set
 # Importing HS_DATA - Test set
 print("==================================================================================================")
-data_Hate_Test = pd.read_csv(data_path + 'HS_DATA_NEW_TEST.csv', sep=',')
+data_Hate_Test = pd.read_csv(data_path + test_file_name, sep=',')
 hs_NLP = HateSpeechNLP(data_Hate_Test, save=False, default_name=False, features=input_features+output_features)
 data_Test = hs_NLP.fit_transform()
 print("Evaluating Test Data")
