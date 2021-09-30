@@ -21,14 +21,14 @@ pd.set_option('display.max_colwidth', 200)
 data_path = '../Data/'
 model_path = '../Models/'
 train_file_name = 'HS_DATA_BINARY_TRAIN.csv'
-test_file_name = 'HS_DATA_NEW_TEST.csv'
+test_file_name = 'HS_DATA_BINARY_TEST.csv'
 input_features = ['text', 'cleaned_stemmed_text', 'length', 'length_original_tokens', 'length_original_text',
                   'number_non_words']
-output_features = ['final_label', 'binary_label']
+output_features = ['final_label', 'binary_label', 'NONE_label', 'HATE_label', 'OFFN_label', 'PRFN_label']
 
 # Import HateSpeech DataFrame
 try:
-    data_Hate = pd.read_pickle(data_path + 'HateSpeech_DataFrame_30-09-2021_18-48-18.pkl').loc[:, input_features +
+    data_Hate = pd.read_pickle(data_path + 'HateSpeech_DataFrame_30-09-2021_20-14-56.pkl').loc[:, input_features +
                                                                                                   output_features]
 except FileNotFoundError:
     # Import HS_Data
@@ -75,17 +75,16 @@ def train(X, y, X_valid, y_valid):
         class_weights[i] = class_weights_list[i]
 
     # Implementing Callbacks - Saving checkpoints & Early Stopping
-    checkpoint_cb = keras.callbacks.ModelCheckpoint(model_path + "Keras_duplicate_data.h5", save_best_only=True)
+    checkpoint_cb = keras.callbacks.ModelCheckpoint(model_path + "Keras_test.h5", save_best_only=True)
     early_stopping_cb = keras.callbacks.EarlyStopping(patience=10, restore_best_weights=True)
 
     # Keras model
     model = keras.models.Sequential()
     model.add(keras.layers.InputLayer(input_shape=X_train_features.shape[1:]))
+    model.add(keras.layers.Dense(512, activation="relu"))
+    model.add(keras.layers.Dense(256, activation="relu"))
+    model.add(keras.layers.Dense(128, activation="relu"))
     model.add(keras.layers.Dense(64, activation="relu"))
-    model.add(keras.layers.Dense(32, activation="relu"))
-    model.add(keras.layers.Dense(16, activation="relu"))
-    model.add(keras.layers.Dense(16, activation="relu"))
-    model.add(keras.layers.Dense(16, activation="relu"))
     model.add(keras.layers.Dense(4, activation="softmax"))
     model.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
     history = model.fit(X_train_features, y['final_label_int'], epochs=30, validation_data=(X_valid_features,
@@ -113,7 +112,7 @@ def test(X, y):
 
         trained_tfidf_vocabulary = pickle.load(open(tfidf_file, "rb"))
         trained_scaler = pickle.load(open(standard_scaler_file, "rb"))
-        trained_NN_model = keras.models.load_model(model_path + 'Keras_duplicate_data' + '.h5')
+        trained_NN_model = keras.models.load_model(model_path + 'Keras_test' + '.h5')
         print("Loaded TFIDF Model -", tfidf_file)
         print("Loaded StandardScaler Model -", standard_scaler_file)
 
@@ -172,23 +171,35 @@ X_val.reset_index(drop=True, inplace=True)
 y_train.reset_index(drop=True, inplace=True)
 y_val.reset_index(drop=True, inplace=True)
 
+
+# X_train = pd.concat([X_train, y_train], axis=1)
+# for i in range(0, 1):
+#     X_train = pd.concat([X_train, X_train[X_train['HATE_label'] == 1], X_train[X_train['PRFN_label'] == 1]])
+#     X_train.reset_index(drop=True, inplace=True)
+#
+#
+# y_train = X_train.loc[:, output_features]
+# X_train = X_train.loc[:, input_features]
+# X_train.reset_index(drop=True, inplace=True)
+# y_train.reset_index(drop=True, inplace=True)
+
 label_encoder = LabelEncoder()
 label_encoder.fit(['NONE', 'PRFN', 'OFFN', 'HATE'], )
 y_train['final_label_int'] = label_encoder.transform(y_train['final_label'])
 y_val['final_label_int'] = label_encoder.transform(y_val['final_label'])
 
-# # Train Keras Sequential model
-# print("==================================================================================================")
-# print("Training starts")
-# seq_history, seq_model = train(X_train, y_train, X_val, y_val)
-# pd.DataFrame(seq_history.history).plot(figsize=(8, 5))
-# plt.grid(True)
-# plt.show()
-#
-# # Testing the validation set
-# print("==================================================================================================")
-# print("Evaluating Validation Set")
-# test(X_val, y_val['final_label_int'])
+# Train Keras Sequential model
+print("==================================================================================================")
+print("Training starts")
+seq_history, seq_model = train(X_train, y_train, X_val, y_val)
+pd.DataFrame(seq_history.history).plot(figsize=(8, 5))
+plt.grid(True)
+plt.show()
+
+# Testing the validation set
+print("==================================================================================================")
+print("Evaluating Validation Set")
+test(X_val, y_val['final_label_int'])
 
 # Testing the test set
 # Importing HS_DATA - Test set
