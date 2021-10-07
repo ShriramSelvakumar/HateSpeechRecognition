@@ -15,7 +15,7 @@ from HateSpeechNLP import HateSpeechNLP
 import pickle
 import logging
 
-# Added Comments
+
 # Setting display width for panda outputs
 pd.set_option('display.max_colwidth', 200)
 # Dont show tensorflow messages
