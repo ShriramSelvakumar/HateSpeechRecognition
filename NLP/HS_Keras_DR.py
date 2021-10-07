@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 from HateSpeechNLP import HateSpeechNLP
 import pickle
 
-
+# Added Comments
 # Setting display width for panda outputs
 pd.set_option('display.max_colwidth', 200)
 # Constants
