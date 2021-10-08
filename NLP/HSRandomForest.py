@@ -11,15 +11,26 @@ import datetime
 import pickle
 
 
-path = '../Data/'
+# Setting display width for panda outputs
+pd.set_option('display.max_colwidth', 200)
+# Constants
+data_path = '../Data/'
+model_path = '../Models/'
+train_file_name = 'HS_DATA_BINARY_TRAIN.csv'
+test_file_name = 'HS_DATA_BINARY_TEST.csv'
+input_features = ['text', 'text_no_stop_words_tokens', 'cleaned_stemmed_text', 'length',
+                  'length_original_tokens', 'length_original_text',
+                  'number_non_words']
+output_features = ['final_label', 'binary_label', 'NONE_label', 'HATE_label', 'OFFN_label', 'PRFN_label']
 
 # Import HateSpeech DataFrame
 try:
-    data_Hate = pd.read_pickle('../Data/Data-Hate-Stemmed-DF.pkl')
+    data_Hate = pd.read_pickle(data_path + 'HateSpeech_DataFrame_30-09-2021_20-14-56.pkl').loc[:, input_features +
+                                                                                                  output_features]
 except FileNotFoundError:
     # Import HS_Data
-    data_Hate_HS = pd.read_csv('../Data/HS_DATA_TRAIN.csv', sep=',')
-    hs_NLP = HateSpeechNLP(data_Hate_HS, save=True, default_name=True)
+    data_Hate_HS = pd.read_csv(data_path + train_file_name, sep=',')
+    hs_NLP = HateSpeechNLP(data_Hate_HS, save=True, default_name=False, features=input_features+output_features)
     data_Hate = hs_NLP.fit_transform()
     print("Hate Speech Training data is Transformed for training -------------")
 
@@ -54,9 +65,9 @@ def train(X, y, model):
 def test(X, y):
     # Load trained model
     try:
-        trained_tfidf_vocabulary = pickle.load(open(path + "TFIDF-Vocabulary-RF_09-09-2021_14-56-05.pkl", "rb"))
-        trained_scaler = pickle.load(open(path + "StandardScaler-RF_09-09-2021_14-56-05.pkl", "rb"))
-        trained_RF_model = pickle.load(open(path + "RF-Model_09-09-2021_14-57-50.pkl", "rb"))
+        trained_tfidf_vocabulary = pickle.load(open(model_path + "TFIDF-Vocabulary-RF_09-09-2021_14-56-05.pkl", "rb"))
+        trained_scaler = pickle.load(open(model_path + "StandardScaler-RF_09-09-2021_14-56-05.pkl", "rb"))
+        trained_RF_model = pickle.load(open(model_path + "RF-Model_09-09-2021_14-57-50.pkl", "rb"))
 
         tfidf_vectorizer = TfidfVectorizer(analyzer=clean_text, vocabulary=trained_tfidf_vocabulary)
         X_test_tfidf = tfidf_vectorizer.fit_transform(X.cleaned_stemmed_text)
@@ -84,19 +95,19 @@ def test(X, y):
 
 
 def save_tfidf_scaler(tfidf, scaler):
-    os.makedirs(path, exist_ok=True)
-    pickle.dump(tfidf.vocabulary_, open(path + 'TFIDF-Vocabulary-RF_' +
+    os.makedirs(model_path, exist_ok=True)
+    pickle.dump(tfidf.vocabulary_, open(model_path + 'TFIDF-Vocabulary-RF_' +
                                         datetime.datetime.now().strftime("%d-%m-%Y_%H-%M-%S") + '.pkl', "wb"))
     print('Saved TFIDF-RF to Pickle')
-    pickle.dump(scaler, open(path + 'StandardScaler-RF_' +
+    pickle.dump(scaler, open(model_path + 'StandardScaler-RF_' +
                              datetime.datetime.now().strftime("%d-%m-%Y_%H-%M-%S") + '.pkl', "wb"))
     print('Saved Scaler-RF to Pickle')
     return
 
 
 def save_RF_model(model):
-    os.makedirs(path, exist_ok=True)
-    pickle.dump(model, open(path + 'RF-Model_' +
+    os.makedirs(model_path, exist_ok=True)
+    pickle.dump(model, open(model_path + 'RF-Model_' +
                             datetime.datetime.now().strftime("%d-%m-%Y_%H-%M-%S") + '.pkl', "wb"))
     print('Saved RF-Model to Pickle')
     return
