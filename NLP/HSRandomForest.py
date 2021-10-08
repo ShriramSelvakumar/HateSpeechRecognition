@@ -14,6 +14,7 @@ import pickle
 # Setting display width for panda outputs
 pd.set_option('display.max_colwidth', 200)
 # Constants
+# Data and Model paths
 data_path = '../Data/'
 model_path = '../Models/'
 train_file_name = 'HS_DATA_BINARY_TRAIN.csv'
