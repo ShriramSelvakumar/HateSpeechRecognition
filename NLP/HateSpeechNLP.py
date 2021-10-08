@@ -1,10 +1,12 @@
 import pandas as pd
 import os
 import nltk
+from nltk.stem import WordNetLemmatizer
 import datetime
 import re
 
 nltk.download('stopwords')
+nltk.download('wordnet')
 
 
 class HateSpeechNLP:
@@ -26,6 +28,7 @@ class HateSpeechNLP:
         self.path = '../Data/'
         if self.stem:
             self.ps = nltk.PorterStemmer()  # PorterStemmer
+            self.lemmatizer = WordNetLemmatizer()  # WordNetLemmatizer
         self.emojis_array = []
 
     def fit_transform(self):
@@ -53,6 +56,9 @@ class HateSpeechNLP:
         self.data['cleaned_text_no_stop_words'] = self.data['text_no_stop_words_tokens'].apply(lambda x:
                                                                                                self.join_tokens(x))
         if self.stem:
+            # Lemmatizing words
+            self.data['lemmatized_tokens'] = self.data['text_no_stop_words_tokens'].apply(lambda x: self.lemmatize(x))
+            self.data['lemmatized_text'] = self.data['lemmatized_tokens'].apply(lambda x: self.join_tokens(x))
             # Stemming words
             self.data['stemmed_text_tokens'] = self.data['text_no_stop_words_tokens'].apply(lambda x:
                                                                                             self.stem_words(x))
@@ -153,6 +159,9 @@ class HateSpeechNLP:
     def stem_words(self, text):
         return_text = [self.ps.stem(word) for word in text]
         return return_text
+
+    def lemmatize(self, text):
+        return [self.lemmatizer.lemmatize(t) for t in text]
 
     @staticmethod
     def finding_length(text):
