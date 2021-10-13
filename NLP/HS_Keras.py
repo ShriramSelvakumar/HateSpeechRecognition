@@ -20,16 +20,20 @@ pd.set_option('display.max_colwidth', 200)
 # Constants
 data_path = '../Data/'
 model_path = '../Models/'
-train_file_name = 'HS_DATA_BINARY_TRAIN.csv'
-test_file_name = 'HS_DATA_BINARY_TEST.csv'
-input_features = ['text', 'cleaned_stemmed_text', 'length', 'length_original_tokens', 'length_original_text',
+train_file_name = 'HS_DATA_HASOC_TRAIN.csv'
+test_file_name = 'HS_DATA_HASOC_TEST.csv'
+input_features_NW = ['lemmatized_text_NW1', 'lemmatized_text_NW2', 'cleaned_stemmed_text_NW1',
+                     'cleaned_stemmed_text_NW2']
+input_features = ['text', 'lemmatized_text', 'cleaned_stemmed_text', 'length',
+                  'length_original_tokens', 'length_original_text',
                   'number_non_words']
 output_features = ['final_label', 'binary_label', 'NONE_label', 'HATE_label', 'OFFN_label', 'PRFN_label']
+train_feature = 'cleaned_stemmed_text'
 
 # Import HateSpeech DataFrame
 try:
-    data_Hate = pd.read_pickle(data_path + 'HateSpeech_DataFrame_30-09-2021_20-14-56.pkl').loc[:, input_features +
-                                                                                                  output_features]
+    data_Hate = pd.read_pickle(data_path + 'HateSpeech_DataFrame_HASOC_12-10-2021_22-27-16.pkl').loc[:, input_features +
+                                                                                                        output_features]
 except FileNotFoundError:
     # Import HS_Data
     data_Hate_HS = pd.read_csv(data_path + train_file_name, sep=',')
