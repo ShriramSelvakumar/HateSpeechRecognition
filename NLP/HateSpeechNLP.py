@@ -59,11 +59,20 @@ class HateSpeechNLP:
             # Lemmatizing words
             self.data['lemmatized_tokens'] = self.data['text_no_stop_words_tokens'].apply(lambda x: self.lemmatize(x))
             self.data['lemmatized_text'] = self.data['lemmatized_tokens'].apply(lambda x: self.join_tokens(x))
+            # Removing non words - Lemmatizing
+            self.data['lemmatized_text_NW1'] = self.data['lemmatized_text'].apply(lambda x: self.removing_non_words_1(x))
+            self.data['lemmatized_text_NW2'] = self.data['lemmatized_text_NW1'].apply(
+                lambda x: self.removing_non_words_2(x))
             # Stemming words
             self.data['stemmed_text_tokens'] = self.data['text_no_stop_words_tokens'].apply(lambda x:
                                                                                             self.stem_words(x))
             # Create clean text attribute/feature
             self.data['cleaned_stemmed_text'] = self.data['stemmed_text_tokens'].apply(lambda x: self.join_tokens(x))
+            # Removing non words - Stemming
+            self.data['cleaned_stemmed_text_NW1'] = self.data['cleaned_stemmed_text'].apply(
+                lambda x: self.removing_non_words_1(x))
+            self.data['cleaned_stemmed_text_NW2'] = self.data['cleaned_stemmed_text_NW1'].apply(
+                lambda x: self.removing_non_words_2(x))
             # Find length of stemmed and stop words removed tokens and create it as new attribute/feature
             self.data['length'] = self.data['stemmed_text_tokens'].apply(lambda x: self.finding_length(x))
             # Find length of original tokens with stop words and create it as new attribute/feature
@@ -103,6 +112,19 @@ class HateSpeechNLP:
         #  Removing other punctuations
         return_text = " ".join(re.split('[…“”—⁣️‼„‘´, ･─•⠀❓¿˽।‍ ‍‍]+', return_text))
         return_text = " ".join(re.split(r'\\', return_text))
+        return return_text
+
+    @staticmethod
+    def removing_non_words_1(text):
+        return_text = re.split('[\d][\d][\d][\d][\d][\d]', text)
+        return_text = " ".join(return_text)
+        return_text = re.split('[\d][\d][\d][\d]', return_text)
+        return " ".join(return_text)
+
+    def removing_non_words_2(self, text):
+        return_text = re.split('[' + "".join(self.emojis_array) + ']+', text)
+        return_text = "".join(return_text)
+        return_text = "".join(re.split('[&#][0-9]+', return_text))
         return return_text
 
     # Function to remove links
