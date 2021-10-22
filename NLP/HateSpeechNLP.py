@@ -34,10 +34,12 @@ class HateSpeechNLP:
     def fit_transform(self):
         # Removing @usernames
         self.data['text_nousername'] = self.data['text'].apply(lambda x: self.remove_username(x))
+        # Removing Hashtags
+        self.data['text_hashtags'] = self.data['text_nousername'].apply(lambda x: self.remove_hashtags(x))
         # Removing RT word
         # self.data['text_RT'] = self.data['text_nousername'].apply(lambda x: self.remove_RT(x))
         # Removing links
-        self.data['text_nolinks'] = self.data['text_nousername'].apply(lambda x: self.remove_links(x))
+        self.data['text_nolinks'] = self.data['text_hashtags'].apply(lambda x: self.remove_links(x))
         # Removing Emojis
         # data_Hate['text_emoji'] = data_Hate['text_links'].apply(lambda x: remove_emoji(x))
         # Removing Punctuations
@@ -138,6 +140,12 @@ class HateSpeechNLP:
     @staticmethod
     def remove_emoji(text):
         return_text = " ".join(re.split('[&#][0-9]+', text))
+        return return_text
+
+    # Function to remove Hashtags - in format "#Hello12378"
+    @staticmethod
+    def remove_hashtags(text):
+        return_text = " ".join(re.split('[#][a-zA-Z0-9_]+', text))
         return return_text
 
     # Function to Tokenize
