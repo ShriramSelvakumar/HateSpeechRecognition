@@ -12,7 +12,7 @@ nltk.download('wordnet')
 class HateSpeechNLP:
     def __init__(self, data, stem=True, save=False, default_name=False, features=None):
         if features is None:
-            self.features = ['cleaned_stemmed_text', 'length', 'length_original_tokens', 'length_original_text',
+            self.features = ['text', 'cleaned_stemmed_text', 'length', 'length_original_tokens', 'length_original_text',
                              'number_non_words']
         else:
             self.features = features
