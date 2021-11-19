@@ -8,7 +8,10 @@ nltk.download('stopwords')
 
 
 class DisasterSituationNLP:
-    def __init__(self, data, stem=True, save=False, default_name=False):
+    def __init__(self, data, stem=True, save=False, default_name=False, features=None):
+        if features is None:
+            self.features = ['text','cleaned_stemmed_text', 'length', 'length_original_tokens', 'length_original_text',
+                             'number_non_words']
         self.data = data
         self.stem = stem
         self.save = save
@@ -61,8 +64,7 @@ class DisasterSituationNLP:
         # Saving to pickle
         if self.save:
             self.save_to_pickle(self.default_name)
-        return self.data.loc[:, ['text', 'cleaned_stemmed_text', 'length', 'length_original_tokens', 'keyword',
-                                 'length_original_text', 'number_non_words', 'target']]
+        return self.data.loc[:, self.features]
 
     # Function to remove @usernames
     @staticmethod
