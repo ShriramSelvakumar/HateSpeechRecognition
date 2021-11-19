@@ -4,7 +4,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 
 
-path = '../Data/'
+path = './Data/'
 
 data_1 = pd.read_csv(path + 'Disaster-1.csv', sep=',')
 # 'target' column is the label - 0 is not Disaster Related Tweet - 1 is Disaster Related Tweet
@@ -32,7 +32,7 @@ data.to_csv(path + 'DS_DATA.csv', sep=',')
 # Read data from csv
 data_DS = pd.read_csv(path + 'DS_DATA.csv', sep=',', index_col=0)
 X_train_, X_test, y_train_, y_test = train_test_split(
-    data_DS.loc[:, ['text', 'keyword']],
+    data_DS.loc[:, ['text']],
     data_DS.loc[:, ['target']],
     test_size=0.15,
     random_state=42,
