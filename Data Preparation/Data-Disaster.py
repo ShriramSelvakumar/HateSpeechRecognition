@@ -4,7 +4,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 
 
-path = './Data/'
+path = '../Data/'
 
 data_1 = pd.read_csv(path + 'Disaster-1.csv', sep=',')
 # 'target' column is the label - 0 is not Disaster Related Tweet - 1 is Disaster Related Tweet
