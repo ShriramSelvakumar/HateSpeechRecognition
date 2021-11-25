@@ -10,8 +10,10 @@ nltk.download('stopwords')
 class DisasterSituationNLP:
     def __init__(self, data, stem=True, save=False, default_name=False, features=None):
         if features is None:
-            self.features = ['text','cleaned_stemmed_text', 'length', 'length_original_tokens', 'length_original_text',
+            self.features = ['text', 'cleaned_stemmed_text', 'length', 'length_original_tokens', 'length_original_text',
                              'number_non_words']
+        else:
+            self.features = features
         self.data = data
         self.stem = stem
         self.save = save
@@ -29,8 +31,10 @@ class DisasterSituationNLP:
     def fit_transform(self):
         # Removing @usernames
         self.data['text_nousername'] = self.data['text'].apply(lambda x: self.remove_username(x))
+        # Removing Hashtags
+        self.data['text_hashtags'] = self.data['text_nousername'].apply(lambda x: self.remove_hashtags(x))
         # Removing links
-        self.data['text_nolinks'] = self.data['text_nousername'].apply(lambda x: self.remove_links(x))
+        self.data['text_nolinks'] = self.data['text_hashtags'].apply(lambda x: self.remove_links(x))
         # Removing Punctuations
         self.data['text_nopunct'] = self.data['text_nolinks'].apply(lambda x: self.remove_punctuation(x))
         # Get array of emojis
@@ -70,6 +74,12 @@ class DisasterSituationNLP:
     @staticmethod
     def remove_username(text):
         return " ".join(re.split('[@][a-zA-Z0-9_]+', text))
+
+    # Function to remove Hashtags - in format "#Hello12378"
+    @staticmethod
+    def remove_hashtags(text):
+        return_text = " ".join(re.split('[#][a-zA-Z0-9_]+', text))
+        return return_text
 
     # Removing Punctuations
     @staticmethod
